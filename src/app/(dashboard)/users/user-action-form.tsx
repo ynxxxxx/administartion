@@ -56,7 +56,7 @@ export function UserActionForm({ userId, isCurrentlyBanned }: UserActionFormProp
           <input type="hidden" name="targetUserId" value={userId} />
           <div>
             <label className="block font-mono text-[11px] text-slate-400 mb-1">
-              Revocation Justification (Recorded in Immutable Audit Log)
+              Revocation Justification (Recorded in Tamper-Resistant Audit Log)
             </label>
             <input
               type="text"

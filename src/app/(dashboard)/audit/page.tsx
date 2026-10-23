@@ -39,7 +39,7 @@ export default async function AuditLogPage() {
     <div className="space-y-6">
       <div className="border-b border-border pb-4">
         <h1 className="font-mono text-lg font-bold text-slate-100 uppercase tracking-wider">
-          Immutable Moderation Audit Log
+          Tamper-Resistant Moderation Audit Log
         </h1>
         <p className="text-xs text-slate-400 font-mono mt-1">
           Append-only cryptographic record of staff interventions, bans, unbans, and role modifications.
@@ -57,7 +57,7 @@ export default async function AuditLogPage() {
           <span>Displaying Latest {auditLogs.length} Records</span>
           <span className="text-success flex items-center gap-1">
             <span className="w-2 h-2 rounded-full bg-success"></span>
-            APPEND-ONLY IMMUTABLE
+            APPEND-ONLY TAMPER-RESISTANT
           </span>
         </div>
 
