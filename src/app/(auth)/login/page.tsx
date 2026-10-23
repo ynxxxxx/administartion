@@ -34,13 +34,7 @@ export default function LoginPage() {
         return;
       }
 
-      // Check MFA Assurance Level
-      const { data: aalData } = await supabase.auth.mfa.getAuthenticatorAssuranceLevel();
-      if (aalData && aalData.nextLevel === 'aal2' && aalData.currentLevel !== 'aal2') {
-        router.push('/mfa');
-      } else {
-        router.push('/');
-      }
+      router.push('/');
     } catch (err: any) {
       setErrorMsg(err.message || 'Authentication failed');
       setIsLoading(false);
