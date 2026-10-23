@@ -2,13 +2,9 @@ import 'server-only';
 import { cookies } from 'next/headers';
 import { createServerClient } from '@supabase/ssr';
 import { adminClient } from '../db/supabase-admin';
+import { verifyStaffRole, verifyMfaAssuranceLevel, type StaffContext } from './rbac';
 
-export interface StaffContext {
-  userId: string;
-  email: string;
-  role: 'admin' | 'moderator';
-  communityId?: string | null;
-}
+export { verifyStaffRole, verifyMfaAssuranceLevel, type StaffContext };
 
 export async function createClientFromCookies() {
   const cookieStore = cookies();
@@ -48,9 +44,10 @@ export async function requireStaffSession(requiredRole?: 'admin' | 'moderator'):
 
   // 1. Verify MFA Assurance Level (aal2 required for all staff operations)
   const { data: aalData, error: aalError } = await client.auth.mfa.getAuthenticatorAssuranceLevel();
-  if (aalError || aalData?.currentLevel !== 'aal2') {
-    throw new Error('MFA_REQUIRED: Operation requires verified AAL2 two-factor authentication');
+  if (aalError) {
+    throw new Error('MFA_REQUIRED: Failed to inspect assurance level');
   }
+  verifyMfaAssuranceLevel(aalData?.currentLevel);
 
   // 2. Query staff_roles table using server client
   const { data: staffRecord, error: staffError } = await adminClient
@@ -64,9 +61,7 @@ export async function requireStaffSession(requiredRole?: 'admin' | 'moderator'):
   }
 
   // 3. Verify role scoping
-  if (requiredRole === 'admin' && staffRecord.role !== 'admin') {
-    throw new Error('Forbidden: Operation requires administrative privileges');
-  }
+  verifyStaffRole(staffRecord.role, requiredRole);
 
   return {
     userId: user.id,
