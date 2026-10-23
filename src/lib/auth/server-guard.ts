@@ -8,22 +8,19 @@ export { verifyStaffRole, verifyMfaAssuranceLevel, type StaffContext };
 
 export async function createClientFromCookies() {
   const cookieStore = await cookies();
-  const supabaseUrl = process.env.SUPABASE_URL || '';
-  const anonKey = process.env.SUPABASE_ANON_KEY || '';
+  const supabaseUrl = process.env.SUPABASE_URL || process.env.NEXT_PUBLIC_SUPABASE_URL || 'https://ldiyekkmzhzmnztvdckc.supabase.co';
+  const anonKey = process.env.SUPABASE_ANON_KEY || process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImxkaXlla2ttemh6bW56dHZkY2tjIiwicm9sZSI6ImFub24iLCJpYXQiOjE3OTI3Njg3NTUsImV4cCI6MjEwODM0NDc1NX0.yJ-Nd3CNvirlYlVPtyc5WidHt6l_41qVKTOdJmccf-M';
 
   return createServerClient(supabaseUrl, anonKey, {
     cookies: {
-      get(name: string) {
-        return cookieStore.get(name)?.value;
+      getAll() {
+        return cookieStore.getAll();
       },
-      set(name: string, value: string, options: any) {
+      setAll(cookiesToSet) {
         try {
-          cookieStore.set({ name, value, ...options });
-        } catch {}
-      },
-      remove(name: string, options: any) {
-        try {
-          cookieStore.set({ name, value: '', ...options });
+          cookiesToSet.forEach(({ name, value, options }) =>
+            cookieStore.set(name, value, options)
+          );
         } catch {}
       },
     },
@@ -31,8 +28,8 @@ export async function createClientFromCookies() {
 }
 
 /**
- * Enforces staff authentication, MFA AAL2 assurance, and role scoping.
- * Must be invoked inside every server action and route handler.
+ * Enforces staff authentication, role scoping, and Gmail/Google identity.
+ * Must be invoked inside every server action and protected page.
  */
 export async function requireStaffSession(requiredRole?: 'admin' | 'moderator'): Promise<StaffContext> {
   const client = await createClientFromCookies();
@@ -42,19 +39,30 @@ export async function requireStaffSession(requiredRole?: 'admin' | 'moderator'):
     throw new Error('Unauthorized: Staff authentication required');
   }
 
-  // 1. Verify MFA Assurance Level (aal2 required for all staff operations)
-  const { data: aalData, error: aalError } = await client.auth.mfa.getAuthenticatorAssuranceLevel();
-  if (aalError) {
-    throw new Error('MFA_REQUIRED: Failed to inspect assurance level');
-  }
-  verifyMfaAssuranceLevel(aalData?.currentLevel);
+  const userEmail = (user.email || '').toLowerCase().trim();
 
-  // 2. Query staff_roles table using server client
-  const { data: staffRecord, error: staffError } = await adminClient
+  // 1. Enforce Google / Gmail
+  if (!userEmail.endsWith('@gmail.com') && !userEmail.endsWith('@googlemail.com')) {
+    throw new Error('Forbidden: Only authorized Google staff accounts may access this portal');
+  }
+
+  // 2. Query staff_roles table
+  let { data: staffRecord, error: staffError } = await adminClient
     .from('staff_roles')
     .select('role, community_id')
     .eq('user_id', user.id)
     .maybeSingle();
+
+  if (!staffRecord) {
+    // Auto-bootstrap primary administrator
+    if (userEmail === 'younesbouziane38@gmail.com') {
+      await adminClient.from('staff_roles').upsert({
+        user_id: user.id,
+        role: 'admin',
+      });
+      staffRecord = { role: 'admin', community_id: null };
+    }
+  }
 
   if (staffError || !staffRecord) {
     throw new Error('Forbidden: User does not hold an active staff role');
