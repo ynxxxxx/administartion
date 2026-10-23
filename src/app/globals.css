@@ -1,0 +1,22 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  body {
+    @apply bg-background text-slate-100 antialiased selection:bg-accent/30 selection:text-white font-sans text-sm;
+  }
+
+  *:focus-visible {
+    @apply outline-none ring-2 ring-accent ring-offset-2 ring-offset-background;
+  }
+}
+
+/* Dense table typography */
+.table-dense th {
+  @apply py-2.5 px-3 font-mono text-xs uppercase tracking-wider text-slate-400 bg-surface border-b border-border text-left;
+}
+
+.table-dense td {
+  @apply py-2.5 px-3 text-xs border-b border-border/50 text-slate-200;
+}
