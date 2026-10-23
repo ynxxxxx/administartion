@@ -5,8 +5,7 @@ import { createClient } from '@supabase/supabase-js';
 
 const isBuildPhase =
   process.env.NEXT_PHASE === 'phase-production-build' ||
-  process.env.NEXT_PHASE === 'phase-export' ||
-  process.env.npm_lifecycle_event === 'build';
+  process.env.NEXT_PHASE === 'phase-export';
 
 const supabaseUrl = process.env.SUPABASE_URL;
 const serviceRoleKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
