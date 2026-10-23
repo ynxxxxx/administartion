@@ -4,12 +4,12 @@
 
 @layer base {
   :root {
-    --background: 0 0% 4%;
+    --background: 240 10% 3.9%;
     --foreground: 0 0% 98%;
   }
 
   body {
-    background-color: #070709;
+    background-color: #09090b;
     color: #f4f4f5;
     font-feature-settings: "cv02", "cv03", "cv04", "cv11";
     -webkit-font-smoothing: antialiased;
@@ -18,126 +18,11 @@
 
   *:focus-visible {
     outline: none;
-    box-shadow: 0 0 0 2px #0a84ff, 0 0 0 4px rgba(10, 132, 255, 0.2);
+    box-shadow: 0 0 0 1px #52525b;
   }
 }
 
-/* Apple Bento Card */
-.apple-card {
-  background: rgba(18, 18, 22, 0.75);
-  backdrop-filter: blur(24px);
-  -webkit-backdrop-filter: blur(24px);
-  border: 1px solid rgba(255, 255, 255, 0.08);
-  border-radius: 24px;
-  box-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.4), inset 0 1px 0 0 rgba(255, 255, 255, 0.08);
-  transition: border-color 0.2s ease, box-shadow 0.2s ease;
-}
-
-.apple-card:hover {
-  border-color: rgba(255, 255, 255, 0.14);
-}
-
-.apple-card-elevated {
-  background: rgba(26, 26, 32, 0.85);
-  backdrop-filter: blur(24px);
-  border: 1px solid rgba(255, 255, 255, 0.1);
-  border-radius: 20px;
-  box-shadow: 0 4px 20px 0 rgba(0, 0, 0, 0.3), inset 0 1px 0 0 rgba(255, 255, 255, 0.08);
-}
-
-/* Apple Pill Segment */
-.apple-pill {
-  background: rgba(255, 255, 255, 0.06);
-  border: 1px solid rgba(255, 255, 255, 0.08);
-  border-radius: 9999px;
-  padding: 6px 14px;
-  font-size: 11px;
-  font-weight: 500;
-  color: #a1a1aa;
-  transition: all 0.2s ease;
-}
-
-.apple-pill-active {
-  background: rgba(255, 255, 255, 0.16);
-  color: #ffffff;
-  border-color: rgba(255, 255, 255, 0.2);
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.25);
-}
-
-/* Apple Dock Navigation Button */
-.apple-dock-btn {
-  width: 44px;
-  height: 44px;
-  border-radius: 14px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  color: #71717a;
-  background: transparent;
-  transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
-  position: relative;
-}
-
-.apple-dock-btn:hover {
-  color: #ffffff;
-  background: rgba(255, 255, 255, 0.08);
-  transform: translateY(-1px);
-}
-
-.apple-dock-btn.active {
-  color: #ffffff;
-  background: rgba(255, 255, 255, 0.14);
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3), inset 0 1px 0 rgba(255, 255, 255, 0.15);
-}
-
-/* Apple Toggle Switch */
-.apple-switch {
-  position: relative;
-  display: inline-block;
-  width: 42px;
-  height: 24px;
-}
-
-.apple-switch input {
-  opacity: 0;
-  width: 0;
-  height: 0;
-}
-
-.apple-slider {
-  position: absolute;
-  cursor: pointer;
-  top: 0;
-  left: 0;
-  right: 0;
-  bottom: 0;
-  background-color: rgba(255, 255, 255, 0.12);
-  transition: 0.3s;
-  border-radius: 24px;
-}
-
-.apple-slider:before {
-  position: absolute;
-  content: "";
-  height: 18px;
-  width: 18px;
-  left: 3px;
-  bottom: 3px;
-  background-color: white;
-  transition: 0.3s cubic-bezier(0.16, 1, 0.3, 1);
-  border-radius: 50%;
-  box-shadow: 0 2px 4px rgba(0,0,0,0.2);
-}
-
-input:checked + .apple-slider {
-  background-color: #30d158;
-}
-
-input:checked + .apple-slider:before {
-  transform: translateX(18px);
-}
-
-/* Apple Style Custom Scrollbar */
+/* Custom Scrollbar */
 ::-webkit-scrollbar {
   width: 6px;
   height: 6px;
@@ -148,10 +33,10 @@ input:checked + .apple-slider:before {
 }
 
 ::-webkit-scrollbar-thumb {
-  background: rgba(255, 255, 255, 0.1);
-  border-radius: 9999px;
+  background: #27272a;
+  border-radius: 3px;
 }
 
 ::-webkit-scrollbar-thumb:hover {
-  background: rgba(255, 255, 255, 0.2);
+  background: #3f3f46;
 }
