@@ -1,5 +1,7 @@
 import React from 'react';
+import { redirect } from 'next/navigation';
 import { adminClient } from '@/lib/db/supabase-admin';
+import { requireStaffSession } from '@/lib/auth/server-guard';
 import { banUserAction, unbanUserAction } from '@/lib/actions/moderation';
 import { Search, ShieldAlert, CheckCircle2, AlertOctagon, User } from 'lucide-react';
 
@@ -8,9 +10,19 @@ export const dynamic = 'force-dynamic';
 export default async function UserLookupPage({
   searchParams,
 }: {
-  searchParams: { q?: string };
+  searchParams: Promise<{ q?: string }>;
 }) {
-  const query = searchParams?.q?.trim() || '';
+  try {
+    await requireStaffSession('moderator');
+  } catch (err: any) {
+    if (err?.message?.includes('MFA')) {
+      redirect('/mfa');
+    }
+    redirect('/login');
+  }
+
+  const resolvedParams = await searchParams;
+  const query = resolvedParams?.q?.trim() || '';
   let foundUser: any = null;
   let userBans: any[] = [];
   let userFlags: any = null;
@@ -59,185 +71,195 @@ export default async function UserLookupPage({
       <form method="GET" className="max-w-xl flex gap-2">
         <div className="relative flex-1">
           <input
+            type="text"
             name="q"
             defaultValue={query}
-            placeholder="Search by username (e.g. alice) or UUID..."
-            className="w-full bg-surface border border-border px-3 py-2 text-xs text-slate-100 focus:border-accent focus:outline-none font-mono"
+            placeholder="Search by UUID or username..."
+            className="w-full bg-surface border border-border px-3 py-2 text-xs font-mono text-slate-100 focus:outline-none focus:border-accent"
           />
-          <Search className="w-4 h-4 text-slate-500 absolute right-3 top-2.5" />
         </div>
         <button
           type="submit"
-          className="px-4 py-2 bg-slate-800 hover:bg-slate-700 text-slate-100 border border-slate-600 font-mono text-xs uppercase"
+          className="px-4 py-2 bg-surface-raised hover:bg-border text-slate-200 border border-border font-mono text-xs flex items-center gap-2 transition-colors"
         >
-          Lookup User
+          <Search className="w-3.5 h-3.5" />
+          <span>Lookup</span>
         </button>
       </form>
 
       {query && !foundUser && (
         <div className="p-4 border border-border bg-surface text-slate-400 font-mono text-xs">
-          No profile discovered matching: <span className="text-slate-200">{query}</span>
+          Zero user accounts discovered matching: <span className="text-slate-200">{query}</span>
         </div>
       )}
 
       {foundUser && (
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-          {/* User Profile Card */}
-          <div className="border border-border bg-surface p-4 space-y-4">
-            <div className="flex items-center justify-between border-b border-border pb-3">
-              <div className="flex items-center gap-2">
-                <User className="w-4 h-4 text-accent" />
-                <span className="font-mono text-xs uppercase font-bold text-slate-200">
-                  Profile Details
-                </span>
+        <div className="space-y-6">
+          {/* User Dossier */}
+          <div className="border border-border bg-surface p-6">
+            <div className="flex items-start justify-between">
+              <div className="flex items-center gap-3">
+                <div className="w-10 h-10 bg-surface-raised border border-border flex items-center justify-center font-mono font-bold text-accent">
+                  <User className="w-5 h-5" />
+                </div>
+                <div>
+                  <h2 className="font-mono text-base font-bold text-slate-100">
+                    @{foundUser.username}
+                  </h2>
+                  <p className="font-mono text-[11px] text-slate-500">
+                    ID: {foundUser.id}
+                  </p>
+                </div>
               </div>
-              <div className="flex items-center gap-1.5 font-mono text-[11px]">
+
+              <div className="flex items-center gap-2">
                 {isCurrentlyBanned ? (
-                  <span className="text-danger flex items-center gap-1 font-bold">
-                    <span className="w-2 h-2 rounded-full bg-danger"></span>
-                    STATUS: BANNED
+                  <span className="px-2.5 py-1 bg-danger/10 border border-danger/40 text-danger font-mono text-[11px] flex items-center gap-1.5">
+                    <ShieldAlert className="w-3.5 h-3.5" />
+                    BANNED
                   </span>
                 ) : (
-                  <span className="text-success flex items-center gap-1">
-                    <span className="w-2 h-2 rounded-full bg-success"></span>
-                    STATUS: ACTIVE
+                  <span className="px-2.5 py-1 bg-success/10 border border-success/40 text-success font-mono text-[11px] flex items-center gap-1.5">
+                    <CheckCircle2 className="w-3.5 h-3.5" />
+                    ACCOUNT ACTIVE
                   </span>
                 )}
               </div>
             </div>
 
-            <div className="space-y-2 text-xs font-mono">
+            <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mt-6 pt-6 border-t border-border font-mono text-xs">
               <div>
-                <span className="text-slate-400">User ID: </span>
-                <span className="text-slate-200 break-all">{foundUser.id}</span>
+                <span className="text-slate-500 block text-[11px]">Display Name</span>
+                <span className="text-slate-200">{foundUser.display_name || '--'}</span>
               </div>
               <div>
-                <span className="text-slate-400">Username: </span>
-                <span className="text-slate-100 font-bold">@{foundUser.username || 'unregistered'}</span>
+                <span className="text-slate-500 block text-[11px]">Onboarded</span>
+                <span className="text-slate-200">{foundUser.onboarded ? 'Yes' : 'No'}</span>
               </div>
               <div>
-                <span className="text-slate-400">Display Name: </span>
-                <span className="text-slate-200">{foundUser.display_name || 'N/A'}</span>
+                <span className="text-slate-500 block text-[11px]">Flag Count</span>
+                <span className="text-slate-200">{userFlags?.flag_count || 0}</span>
               </div>
               <div>
-                <span className="text-slate-400">Trust Level: </span>
-                <span className="text-accent font-bold">Level {userFlags?.trust_level ?? 0}</span>
-              </div>
-              <div>
-                <span className="text-slate-400">Created: </span>
-                <span className="text-slate-300">{new Date(foundUser.created_at).toLocaleString()}</span>
+                <span className="text-slate-500 block text-[11px]">Low Trust Quarantine</span>
+                <span className="text-slate-200">{userFlags?.is_low_trust ? 'Active' : 'No'}</span>
               </div>
             </div>
+          </div>
 
-            {/* Moderation Actions Form */}
-            <div className="pt-4 border-t border-border">
-              {isCurrentlyBanned ? (
-                <form action={async (formData: FormData) => { "use server"; await unbanUserAction(formData); }} className="space-y-3">
-                  <input type="hidden" name="targetUserId" value={foundUser.id} />
+          {/* Action Enforcement Bar */}
+          <div className="border border-border bg-surface p-6">
+            <h3 className="font-mono text-xs font-bold uppercase tracking-wider text-slate-300 mb-4 flex items-center gap-2">
+              <AlertOctagon className="w-4 h-4 text-warning" />
+              <span>Enforce Administrative Intervention</span>
+            </h3>
+
+            {isCurrentlyBanned ? (
+              <form action={async (formData) => { "use server"; await unbanUserAction(formData); }} className="space-y-4 max-w-xl">
+                <input type="hidden" name="targetUserId" value={foundUser.id} />
+                <div>
+                  <label className="block font-mono text-[11px] text-slate-400 mb-1">
+                    Revocation Justification (Recorded in Immutable Audit Log)
+                  </label>
+                  <input
+                    type="text"
+                    name="reason"
+                    required
+                    placeholder="Enter audit reason for pardon..."
+                    className="w-full bg-surface-raised border border-border px-3 py-2 text-xs font-mono text-slate-100 focus:outline-none focus:border-accent"
+                  />
+                </div>
+                <button
+                  type="submit"
+                  className="px-4 py-2 bg-success text-slate-950 font-mono text-xs font-bold hover:bg-success/90 transition-colors"
+                >
+                  Confirm Account Pardon & Unban
+                </button>
+              </form>
+            ) : (
+              <form action={async (formData) => { "use server"; await banUserAction(formData); }} className="space-y-4 max-w-xl">
+                <input type="hidden" name="targetUserId" value={foundUser.id} />
+                <div className="grid grid-cols-2 gap-4">
                   <div>
-                    <label className="block text-slate-400 font-mono text-[11px] mb-1">
-                      Unban Reason (Mandatory Audit Requirement)
-                    </label>
-                    <textarea
-                      name="reason"
-                      required
-                      minLength={3}
-                      className="w-full bg-surface-raised border border-border p-2 text-xs text-slate-100 focus:border-accent focus:outline-none"
-                      rows={2}
-                      placeholder="e.g. Completed appeal review and approved reinstatement."
-                    />
-                  </div>
-                  <button
-                    type="submit"
-                    className="w-full py-2 bg-emerald-900/60 hover:bg-emerald-800 text-emerald-100 border border-emerald-700 font-mono text-xs uppercase transition-colors"
-                  >
-                    Lift Ban & Reinstate User
-                  </button>
-                </form>
-              ) : (
-                <form action={async (formData: FormData) => { "use server"; await banUserAction(formData); }} className="space-y-3">
-                  <input type="hidden" name="targetUserId" value={foundUser.id} />
-                  <div>
-                    <label className="block text-slate-400 font-mono text-[11px] mb-1">
-                      Ban Scope
+                    <label className="block font-mono text-[11px] text-slate-400 mb-1">
+                      Enforcement Scope
                     </label>
                     <select
                       name="scope"
-                      className="w-full bg-surface-raised border border-border px-2 py-1.5 text-xs text-slate-100 focus:border-accent focus:outline-none"
+                      className="w-full bg-surface-raised border border-border px-3 py-2 text-xs font-mono text-slate-100 focus:outline-none focus:border-accent"
                     >
-                      <option value="global">Global (Platform-Wide Suspension)</option>
+                      <option value="global">Global Platform Ban</option>
                       <option value="community">Community Scoped</option>
                     </select>
                   </div>
                   <div>
-                    <label className="block text-slate-400 font-mono text-[11px] mb-1">
-                      Duration in Days (0 = Permanent)
+                    <label className="block font-mono text-[11px] text-slate-400 mb-1">
+                      Duration (Days, 0 = Permanent)
                     </label>
                     <input
-                      name="durationDays"
                       type="number"
+                      name="durationDays"
                       defaultValue={0}
                       min={0}
-                      className="w-full bg-surface-raised border border-border px-2 py-1.5 text-xs text-slate-100 focus:border-accent focus:outline-none"
+                      max={3650}
+                      className="w-full bg-surface-raised border border-border px-3 py-2 text-xs font-mono text-slate-100 focus:outline-none focus:border-accent"
                     />
                   </div>
-                  <div>
-                    <label className="block text-slate-400 font-mono text-[11px] mb-1">
-                      Mandatory Violation Reason
-                    </label>
-                    <textarea
-                      name="reason"
-                      required
-                      minLength={3}
-                      className="w-full bg-surface-raised border border-border p-2 text-xs text-slate-100 focus:border-accent focus:outline-none"
-                      rows={2}
-                      placeholder="e.g. Terms of Service violation: harassment in community chat."
-                    />
-                  </div>
-                  <button
-                    type="submit"
-                    className="w-full py-2 bg-rose-950/80 hover:bg-rose-900 text-rose-100 border border-rose-800 font-mono text-xs uppercase tracking-wider transition-colors"
-                  >
-                    Enforce Ban & Terminate Sessions
-                  </button>
-                </form>
-              )}
-            </div>
+                </div>
+
+                <div>
+                  <label className="block font-mono text-[11px] text-slate-400 mb-1">
+                    Enforcement Reason (Mandatory Audit Trail Entry)
+                  </label>
+                  <input
+                    type="text"
+                    name="reason"
+                    required
+                    placeholder="Provide detailed violation rationale..."
+                    className="w-full bg-surface-raised border border-border px-3 py-2 text-xs font-mono text-slate-100 focus:outline-none focus:border-accent"
+                  />
+                </div>
+
+                <button
+                  type="submit"
+                  className="px-4 py-2 bg-danger text-white font-mono text-xs font-bold hover:bg-danger/90 transition-colors"
+                >
+                  Execute Ban & Revoke All Active Sessions
+                </button>
+              </form>
+            )}
           </div>
 
-          {/* Ban History Log Table */}
-          <div className="md:col-span-2 border border-border bg-surface p-4">
-            <h2 className="font-mono text-xs uppercase font-bold text-slate-200 mb-3 border-b border-border pb-2">
-              Historical Account Restrictions ({userBans.length})
-            </h2>
-
+          {/* Historical Bans */}
+          <div className="border border-border bg-surface overflow-hidden">
+            <div className="p-3 bg-surface-raised border-b border-border font-mono text-xs text-slate-400 font-bold uppercase">
+              Account Restriction History ({userBans.length})
+            </div>
             {userBans.length === 0 ? (
-              <p className="text-xs text-slate-500 font-mono py-4">No historical bans recorded for this user account.</p>
-            ) : (
-              <div className="overflow-x-auto">
-                <table className="w-full table-dense">
-                  <thead>
-                    <tr>
-                      <th>Date</th>
-                      <th>Scope</th>
-                      <th>Reason</th>
-                      <th>Expires</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {userBans.map((ban) => (
-                      <tr key={ban.id}>
-                        <td className="font-mono">{new Date(ban.created_at).toLocaleDateString()}</td>
-                        <td className="font-mono uppercase text-slate-300">{ban.scope}</td>
-                        <td className="max-w-xs truncate text-slate-200">{ban.reason}</td>
-                        <td className="font-mono text-slate-400">
-                          {ban.expires_at ? new Date(ban.expires_at).toLocaleDateString() : 'Permanent'}
-                        </td>
-                      </tr>
-                    ))}
-                  </tbody>
-                </table>
+              <div className="p-4 text-center text-slate-500 font-mono text-xs">
+                Zero historic restrictions logged for this user.
               </div>
+            ) : (
+              <table className="w-full table-dense">
+                <thead>
+                  <tr className="border-b border-border bg-surface-raised/40">
+                    <th className="p-2 text-left text-slate-400 font-normal">Scope</th>
+                    <th className="p-2 text-left text-slate-400 font-normal">Reason</th>
+                    <th className="p-2 text-left text-slate-400 font-normal">Expires</th>
+                    <th className="p-2 text-left text-slate-400 font-normal">Banned At</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {userBans.map((b) => (
+                    <tr key={b.id} className="border-b border-border/40 font-mono text-xs">
+                      <td className="p-2 uppercase text-slate-300">{b.scope}</td>
+                      <td className="p-2 text-slate-200">{b.reason}</td>
+                      <td className="p-2 text-slate-400">{b.expires_at ? new Date(b.expires_at).toLocaleDateString() : 'Permanent'}</td>
+                      <td className="p-2 text-slate-500">{new Date(b.created_at).toLocaleDateString()}</td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
             )}
           </div>
         </div>

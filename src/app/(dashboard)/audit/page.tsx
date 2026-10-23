@@ -1,10 +1,21 @@
 import React from 'react';
+import { redirect } from 'next/navigation';
 import { adminClient } from '@/lib/db/supabase-admin';
+import { requireStaffSession } from '@/lib/auth/server-guard';
 import { FileText, ShieldAlert } from 'lucide-react';
 
 export const dynamic = 'force-dynamic';
 
 export default async function AuditLogPage() {
+  try {
+    await requireStaffSession('moderator');
+  } catch (err: any) {
+    if (err?.message?.includes('MFA')) {
+      redirect('/mfa');
+    }
+    redirect('/login');
+  }
+
   let auditLogs: any[] = [];
   let errorMsg = '';
 
@@ -58,34 +69,36 @@ export default async function AuditLogPage() {
           <div className="overflow-x-auto">
             <table className="w-full table-dense">
               <thead>
-                <tr>
-                  <th>Timestamp (UTC)</th>
-                  <th>Action</th>
-                  <th>Actor (Staff ID)</th>
-                  <th>Target Type</th>
-                  <th>Target ID</th>
-                  <th>Mandatory Reason</th>
+                <tr className="border-b border-border bg-surface-raised/40 font-mono text-[11px] text-slate-400">
+                  <th className="p-2.5 text-left font-normal">Timestamp</th>
+                  <th className="p-2.5 text-left font-normal">Staff Actor</th>
+                  <th className="p-2.5 text-left font-normal">Action</th>
+                  <th className="p-2.5 text-left font-normal">Target Type</th>
+                  <th className="p-2.5 text-left font-normal">Target Identifier</th>
+                  <th className="p-2.5 text-left font-normal">Audit Reason</th>
                 </tr>
               </thead>
-              <tbody>
+              <tbody className="font-mono text-xs divide-y divide-border/30">
                 {auditLogs.map((log) => (
-                  <tr key={log.id}>
-                    <td className="font-mono text-slate-300">
-                      {new Date(log.created_at).toISOString().replace('T', ' ').substring(0, 19)}
+                  <tr key={log.id} className="hover:bg-surface-raised/30 transition-colors">
+                    <td className="p-2.5 text-slate-400 text-[11px] whitespace-nowrap">
+                      {new Date(log.created_at).toLocaleString()}
                     </td>
-                    <td className="font-mono uppercase font-bold text-accent">
-                      {log.action}
+                    <td className="p-2.5 text-accent font-semibold text-[11px]">
+                      {log.actor_id}
                     </td>
-                    <td className="font-mono text-slate-400 text-[11px] truncate max-w-[140px]">
-                      {log.actor_id || 'System'}
+                    <td className="p-2.5">
+                      <span className="px-2 py-0.5 uppercase text-[10px] bg-surface-raised border border-border text-slate-300">
+                        {log.action}
+                      </span>
                     </td>
-                    <td className="font-mono text-slate-300 uppercase">
+                    <td className="p-2.5 text-slate-300 uppercase text-[11px]">
                       {log.target_type}
                     </td>
-                    <td className="font-mono text-slate-400 text-[11px] truncate max-w-[140px]">
-                      {log.target_id}
+                    <td className="p-2.5 text-slate-400 text-[11px]">
+                      {log.target_id || '--'}
                     </td>
-                    <td className="text-slate-200 max-w-sm">
+                    <td className="p-2.5 text-slate-200">
                       {log.reason}
                     </td>
                   </tr>

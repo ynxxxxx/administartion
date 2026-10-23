@@ -1,5 +1,6 @@
 import React from 'react';
 import Link from 'next/link';
+import { redirect } from 'next/navigation';
 import { Shield, Users, FileText, UserCog, Activity, LogOut } from 'lucide-react';
 import { requireStaffSession } from '@/lib/auth/server-guard';
 
@@ -11,8 +12,13 @@ export default async function DashboardLayout({
   let staff: any = null;
   try {
     staff = await requireStaffSession();
-  } catch (err) {
-    // In dev/mock fallback or render redirect
+  } catch (err: any) {
+    if (process.env.NEXT_PHASE !== 'phase-production-build') {
+      if (err?.message?.includes('MFA')) {
+        redirect('/mfa');
+      }
+      redirect('/login');
+    }
   }
 
   return (

@@ -1,10 +1,21 @@
 import React from 'react';
+import { redirect } from 'next/navigation';
 import { adminClient } from '@/lib/db/supabase-admin';
+import { requireStaffSession } from '@/lib/auth/server-guard';
 import { Users, FileText, Ban, AlertTriangle, ShieldCheck, Clock } from 'lucide-react';
 
 export const dynamic = 'force-dynamic';
 
 export default async function OverviewPage() {
+  try {
+    await requireStaffSession('moderator');
+  } catch (err: any) {
+    if (err?.message?.includes('MFA')) {
+      redirect('/mfa');
+    }
+    redirect('/login');
+  }
+
   let userCount = 0;
   let activeBansCount = 0;
   let logsCount = 0;
