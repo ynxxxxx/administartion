@@ -132,7 +132,7 @@ export default async function UserLookupPage({
             {/* Moderation Actions Form */}
             <div className="pt-4 border-t border-border">
               {isCurrentlyBanned ? (
-                <form action={unbanUserAction} className="space-y-3">
+                <form action={async (formData: FormData) => { "use server"; await unbanUserAction(formData); }} className="space-y-3">
                   <input type="hidden" name="targetUserId" value={foundUser.id} />
                   <div>
                     <label className="block text-slate-400 font-mono text-[11px] mb-1">
@@ -155,7 +155,7 @@ export default async function UserLookupPage({
                   </button>
                 </form>
               ) : (
-                <form action={banUserAction} className="space-y-3">
+                <form action={async (formData: FormData) => { "use server"; await banUserAction(formData); }} className="space-y-3">
                   <input type="hidden" name="targetUserId" value={foundUser.id} />
                   <div>
                     <label className="block text-slate-400 font-mono text-[11px] mb-1">

@@ -67,7 +67,7 @@ export default async function StaffManagementPage() {
             </span>
           </div>
 
-          <form action={assignStaffRoleAction} className="space-y-4 font-mono text-xs">
+          <form action={async (formData: FormData) => { "use server"; await assignStaffRoleAction(formData); }} className="space-y-4 font-mono text-xs">
             <div>
               <label className="block text-slate-400 text-[11px] mb-1">Target User ID (UUID)</label>
               <input

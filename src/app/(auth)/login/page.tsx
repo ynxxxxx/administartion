@@ -111,7 +111,7 @@ export default function LoginPage() {
 
         <div className="mt-6 pt-4 border-t border-border/50 text-center">
           <p className="text-[11px] text-slate-500 font-mono">
-            Restricted System — Access Audited and Logged
+            Restricted System â€” Access Audited and Logged
           </p>
         </div>
       </div>

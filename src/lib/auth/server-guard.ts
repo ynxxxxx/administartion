@@ -7,7 +7,7 @@ import { verifyStaffRole, verifyMfaAssuranceLevel, type StaffContext } from './r
 export { verifyStaffRole, verifyMfaAssuranceLevel, type StaffContext };
 
 export async function createClientFromCookies() {
-  const cookieStore = cookies();
+  const cookieStore = await cookies();
   const supabaseUrl = process.env.SUPABASE_URL || '';
   const anonKey = process.env.SUPABASE_ANON_KEY || '';
 

@@ -1,12 +1,12 @@
 /**
  * Test Suite: Admin Permissions & RBAC Enforcement Matrix
- * Validates real guard code imported directly from src/lib/auth/rbac.ts.
+ * Directly imports and tests the single authoritative source: src/lib/auth/rbac.ts
  */
 
-const assert = require('assert');
-const { verifyStaffRole, verifyMfaAssuranceLevel } = require('../src/lib/auth/rbac.js');
+import assert from 'assert';
+import { verifyStaffRole, verifyMfaAssuranceLevel } from '../src/lib/auth/rbac';
 
-console.log('Running Admin Dashboard Permission & Scoping Unit Tests against real guard code...');
+console.log('Running Admin Dashboard Permission & Scoping Unit Tests against rbac.ts...');
 
 // TEST 1: Non-staff user access denial
 assert.throws(
@@ -53,5 +53,5 @@ assert.strictEqual(
 );
 console.log('  √ Test 5 Passed: Strict MFA AAL2 assurance required');
 
-console.log('\nALL ADMIN PERMISSION TESTS PASSED SUCCESSFULLY (5/5 assertions against real guard code).');
+console.log('\nALL ADMIN PERMISSION TESTS PASSED SUCCESSFULLY (5/5 assertions against rbac.ts).');
 process.exit(0);

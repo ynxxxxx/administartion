@@ -2,7 +2,7 @@ import type { Metadata } from 'next';
 import './globals.css';
 
 export const metadata: Metadata = {
-  title: 'TV Social Platform — Staff Control Center',
+  title: 'TV Social Platform â€” Staff Control Center',
   description: 'Internal security and moderation administration dashboard',
   robots: 'noindex, nofollow',
 };
