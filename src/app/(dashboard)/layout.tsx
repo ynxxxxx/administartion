@@ -1,8 +1,8 @@
 import React from 'react';
-import Link from 'next/link';
 import { redirect } from 'next/navigation';
-import { Shield, Users, FileText, UserCog, Activity, LogOut } from 'lucide-react';
 import { requireStaffSession } from '@/lib/auth/server-guard';
+import { AppleDock } from '@/components/apple-dock';
+import { ShieldCheck, Database, Search, Command } from 'lucide-react';
 
 export default async function DashboardLayout({
   children,
@@ -22,71 +22,57 @@ export default async function DashboardLayout({
   }
 
   return (
-    <div className="min-h-screen flex flex-col bg-background">
-      {/* Top Console Navigation Bar */}
-      <header className="h-12 border-b border-border bg-surface px-4 flex items-center justify-between">
-        <div className="flex items-center gap-6">
-          <Link href="/" className="flex items-center gap-2 text-slate-100 font-mono text-xs font-bold tracking-wider uppercase">
-            <Shield className="w-4 h-4 text-accent" />
-            <span>TV Platform Staff Console</span>
-          </Link>
+    <div className="min-h-screen bg-[#070709] text-zinc-100 p-2 md:p-4 lg:p-6 flex items-center justify-center font-sans antialiased">
+      {/* VisionOS / Apple Glass Bento Window Container */}
+      <div className="w-full max-w-[1580px] min-h-[920px] bg-[#0c0c0f]/95 rounded-[36px] border border-white/[0.14] shadow-[0_24px_80px_rgba(0,0,0,0.85),inset_0_1px_0_0_rgba(255,255,255,0.12)] p-3 md:p-4 flex flex-row gap-3 overflow-hidden">
+        
+        {/* Left Thin Apple Dock Rail */}
+        <AppleDock staffRole={staff?.role} userEmail={staff?.email} />
 
-          <nav className="hidden md:flex items-center gap-1 font-mono text-xs">
-            <Link
-              href="/"
-              className="px-3 py-1.5 text-slate-300 hover:text-white hover:bg-surface-raised transition-colors flex items-center gap-1.5"
-            >
-              <Activity className="w-3.5 h-3.5 text-slate-400" />
-              <span>Overview</span>
-            </Link>
-            <Link
-              href="/users"
-              className="px-3 py-1.5 text-slate-300 hover:text-white hover:bg-surface-raised transition-colors flex items-center gap-1.5"
-            >
-              <Users className="w-3.5 h-3.5 text-slate-400" />
-              <span>User Lookup</span>
-            </Link>
-            <Link
-              href="/audit"
-              className="px-3 py-1.5 text-slate-300 hover:text-white hover:bg-surface-raised transition-colors flex items-center gap-1.5"
-            >
-              <FileText className="w-3.5 h-3.5 text-slate-400" />
-              <span>Audit Log</span>
-            </Link>
-            <Link
-              href="/staff"
-              className="px-3 py-1.5 text-slate-300 hover:text-white hover:bg-surface-raised transition-colors flex items-center gap-1.5"
-            >
-              <UserCog className="w-3.5 h-3.5 text-slate-400" />
-              <span>Staff Management</span>
-            </Link>
-          </nav>
+        {/* Main Content Stage */}
+        <div className="flex-1 flex flex-col gap-3 min-w-0">
+          
+          {/* Top Subtle Apple Header Bar */}
+          <header className="h-12 px-4 rounded-[20px] bg-[#121216]/80 backdrop-blur-xl border border-white/[0.08] flex items-center justify-between shrink-0">
+            <div className="flex items-center gap-3">
+              <span className="text-xs font-semibold tracking-tight text-white flex items-center gap-2">
+                <span className="w-2 h-2 rounded-full bg-apple-blue shadow-glow" />
+                <span>TV Platform Administration Console</span>
+              </span>
+              <span className="text-zinc-600 text-xs">/</span>
+              <span className="text-xs text-zinc-400 font-medium">Apple Ecosystem Edition</span>
+            </div>
+
+            <div className="flex items-center gap-2.5">
+              {/* Backend Link Status Pill */}
+              <div className="flex items-center gap-1.5 px-3 py-1 rounded-full bg-white/[0.04] border border-white/[0.08] text-[11px] font-medium text-zinc-300">
+                <span className="w-1.5 h-1.5 rounded-full bg-apple-green animate-pulse" />
+                <Database className="w-3 h-3 text-zinc-400" />
+                <span>Supabase Live</span>
+              </div>
+
+              {/* MFA AAL2 Assurance Pill */}
+              <div className="flex items-center gap-1.5 px-3 py-1 rounded-full bg-apple-blue/10 border border-apple-blue/20 text-[11px] font-medium text-apple-blue">
+                <ShieldCheck className="w-3 h-3" />
+                <span>AAL2 MFA Active</span>
+              </div>
+
+              {/* Quick Search Pill */}
+              <div className="hidden sm:flex items-center gap-1.5 px-3 py-1 rounded-full bg-white/[0.04] border border-white/[0.08] text-[11px] text-zinc-400">
+                <Search className="w-3 h-3" />
+                <span>Spotlight</span>
+                <kbd className="px-1 py-0.2 bg-white/10 rounded text-[9px] font-mono text-zinc-300">⌘K</kbd>
+              </div>
+            </div>
+          </header>
+
+          {/* Main Dynamic Bento Canvas */}
+          <main className="flex-1 overflow-y-auto overflow-x-hidden">
+            {children}
+          </main>
         </div>
 
-        <div className="flex items-center gap-4">
-          <div className="flex items-center gap-2 font-mono text-xs px-2.5 py-1 bg-surface-raised border border-border">
-            <span className="w-2 h-2 rounded-full bg-success"></span>
-            <span className="text-slate-300 uppercase tracking-wider text-[11px]">
-              {staff?.role ? `ROLE: ${staff.role}` : 'STAFF ACTIVE'}
-            </span>
-          </div>
-
-          <form action="/api/auth/signout" method="POST">
-            <button
-              type="submit"
-              className="p-1.5 text-slate-400 hover:text-slate-200 hover:bg-surface-raised transition-colors"
-              title="Sign Out"
-            >
-              <LogOut className="w-4 h-4" />
-            </button>
-          </form>
-        </div>
-      </header>
-
-      {/* Main Workspace */}
-      <main className="flex-1 p-6 max-w-7xl w-full mx-auto">
-        {children}
-      </main>
+      </div>
     </div>
   );
 }

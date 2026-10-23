@@ -2,7 +2,7 @@ import React from 'react';
 import { redirect } from 'next/navigation';
 import { adminClient } from '@/lib/db/supabase-admin';
 import { requireStaffSession } from '@/lib/auth/server-guard';
-import { FileText, ShieldAlert } from 'lucide-react';
+import { ShieldCheck, FileText, Lock, Filter, Clock, User } from 'lucide-react';
 
 export const dynamic = 'force-dynamic';
 
@@ -36,69 +36,89 @@ export default async function AuditLogPage() {
   }
 
   return (
-    <div className="space-y-6">
-      <div className="border-b border-border pb-4">
-        <h1 className="font-mono text-lg font-bold text-slate-100 uppercase tracking-wider">
-          Tamper-Resistant Moderation Audit Log
-        </h1>
-        <p className="text-xs text-slate-400 font-mono mt-1">
-          Append-only cryptographic record of staff interventions, bans, unbans, and role modifications.
-        </p>
+    <div className="space-y-3 pb-4">
+      
+      {/* Header Bento Card */}
+      <div className="apple-card p-5">
+        <div className="flex flex-col md:flex-row md:items-center justify-between gap-3">
+          <div className="flex items-center gap-3">
+            <span className="w-10 h-10 rounded-2xl bg-apple-purple/10 border border-apple-purple/20 flex items-center justify-center text-apple-purple">
+              <ShieldCheck className="w-5 h-5" />
+            </span>
+            <div>
+              <h1 className="text-base font-semibold text-white tracking-tight">
+                Tamper-Resistant Moderation Audit Trail
+              </h1>
+              <p className="text-xs text-zinc-400">
+                Cryptographic append-only database record of staff interventions, bans, pardons, and role elevations.
+              </p>
+            </div>
+          </div>
+
+          <div className="flex items-center gap-2">
+            <span className="px-3 py-1 rounded-full bg-apple-green/10 border border-apple-green/20 text-apple-green text-xs font-semibold flex items-center gap-1.5">
+              <span className="w-1.5 h-1.5 rounded-full bg-apple-green" />
+              <span>APPEND-ONLY ENFORCED</span>
+            </span>
+            <span className="px-3 py-1 rounded-full bg-white/[0.04] border border-white/[0.08] text-zinc-300 text-xs font-medium">
+              {auditLogs.length} Events Logged
+            </span>
+          </div>
+        </div>
       </div>
 
       {errorMsg && (
-        <div className="p-3 border border-danger/40 bg-danger/10 text-danger font-mono text-xs">
+        <div className="p-4 rounded-2xl border border-apple-red/30 bg-apple-red/10 text-apple-red text-xs font-medium">
           Error querying audit log: {errorMsg}
         </div>
       )}
 
-      <div className="border border-border bg-surface overflow-hidden">
-        <div className="p-3 bg-surface-raised border-b border-border flex items-center justify-between text-xs font-mono text-slate-400">
-          <span>Displaying Latest {auditLogs.length} Records</span>
-          <span className="text-success flex items-center gap-1">
-            <span className="w-2 h-2 rounded-full bg-success"></span>
-            APPEND-ONLY TAMPER-RESISTANT
-          </span>
-        </div>
-
+      {/* Main Table Bento Card */}
+      <div className="apple-card p-5 overflow-hidden">
         {auditLogs.length === 0 ? (
-          <div className="p-8 text-center text-slate-500 font-mono text-xs">
-            No moderation actions recorded in the platform audit trail yet.
+          <div className="p-12 text-center text-zinc-500 text-xs">
+            Zero moderation actions recorded in the platform audit trail yet.
           </div>
         ) : (
           <div className="overflow-x-auto">
-            <table className="w-full table-dense">
+            <table className="w-full text-left text-xs">
               <thead>
-                <tr className="border-b border-border bg-surface-raised/40 font-mono text-[11px] text-slate-400">
-                  <th className="p-2.5 text-left font-normal">Timestamp</th>
-                  <th className="p-2.5 text-left font-normal">Staff Actor</th>
-                  <th className="p-2.5 text-left font-normal">Action</th>
-                  <th className="p-2.5 text-left font-normal">Target Type</th>
-                  <th className="p-2.5 text-left font-normal">Target Identifier</th>
-                  <th className="p-2.5 text-left font-normal">Audit Reason</th>
+                <tr className="border-b border-white/[0.06] text-zinc-500 text-[11px] font-medium">
+                  <th className="pb-3 pl-2 font-normal">Timestamp</th>
+                  <th className="pb-3 font-normal">Staff Actor</th>
+                  <th className="pb-3 font-normal">Action Type</th>
+                  <th className="pb-3 font-normal">Target Entity</th>
+                  <th className="pb-3 font-normal">Target ID</th>
+                  <th className="pb-3 pr-2 font-normal">Audit Justification</th>
                 </tr>
               </thead>
-              <tbody className="font-mono text-xs divide-y divide-border/30">
+              <tbody className="divide-y divide-white/[0.03]">
                 {auditLogs.map((log) => (
-                  <tr key={log.id} className="hover:bg-surface-raised/30 transition-colors">
-                    <td className="p-2.5 text-slate-400 text-[11px] whitespace-nowrap">
+                  <tr key={log.id} className="hover:bg-white/[0.02] transition-colors">
+                    <td className="py-3 pl-2 text-zinc-400 whitespace-nowrap text-[11px]">
                       {new Date(log.created_at).toLocaleString()}
                     </td>
-                    <td className="p-2.5 text-accent font-semibold text-[11px]">
+                    <td className="py-3 font-mono text-apple-blue font-semibold text-[11px]">
                       {log.actor_id}
                     </td>
-                    <td className="p-2.5">
-                      <span className="px-2 py-0.5 uppercase text-[10px] bg-surface-raised border border-border text-slate-300">
+                    <td className="py-3">
+                      <span className={`px-2 py-0.5 rounded-full text-[10px] font-semibold uppercase border ${
+                        log.action === 'ban' 
+                          ? 'bg-apple-red/10 border-apple-red/20 text-apple-red'
+                          : log.action === 'unban'
+                          ? 'bg-apple-green/10 border-apple-green/20 text-apple-green'
+                          : 'bg-apple-blue/10 border-apple-blue/20 text-apple-blue'
+                      }`}>
                         {log.action}
                       </span>
                     </td>
-                    <td className="p-2.5 text-slate-300 uppercase text-[11px]">
+                    <td className="py-3 uppercase text-zinc-300 text-[11px]">
                       {log.target_type}
                     </td>
-                    <td className="p-2.5 text-slate-400 text-[11px]">
+                    <td className="py-3 font-mono text-zinc-400 text-[11px]">
                       {log.target_id || '--'}
                     </td>
-                    <td className="p-2.5 text-slate-200">
+                    <td className="py-3 pr-2 text-zinc-200 text-xs">
                       {log.reason}
                     </td>
                   </tr>
@@ -108,6 +128,7 @@ export default async function AuditLogPage() {
           </div>
         )}
       </div>
+
     </div>
   );
 }
