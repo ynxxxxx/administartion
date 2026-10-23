@@ -9,7 +9,8 @@ import {
   Users, 
   Shield, 
   UserCheck, 
-  LogOut 
+  LogOut,
+  Terminal
 } from 'lucide-react';
 
 interface SidebarProps {
@@ -39,23 +40,23 @@ export function Sidebar({ staffRole, userEmail }: SidebarProps) {
   };
 
   return (
-    <aside className="w-full md:w-60 bg-[#0c0c0e] border-r border-zinc-800/80 flex flex-col shrink-0 min-h-screen">
+    <aside className="w-full md:w-60 bg-[#121212] border-r border-[#2e2e2e] flex flex-col shrink-0 min-h-screen">
       {/* Brand Header */}
-      <div className="h-14 px-5 flex items-center justify-between border-b border-zinc-800/80">
+      <div className="h-16 px-6 flex items-center justify-between border-b border-[#2e2e2e]">
         <Link href="/" className="flex items-center gap-2.5">
-          <div className="w-5 h-5 rounded bg-zinc-200 text-zinc-950 flex items-center justify-center font-mono font-bold text-xs">
-            U
+          <div className="w-6 h-6 rounded-md bg-[#121212] border border-[#3ecf8e] flex items-center justify-center text-[#3ecf8e]">
+            <Terminal className="w-3.5 h-3.5" />
           </div>
-          <span className="font-medium text-sm text-zinc-100 tracking-tight">Ullista Admin</span>
+          <span className="font-medium text-sm text-[#fafafa] tracking-tight">Ullista Admin</span>
         </Link>
-        <span className="text-[10px] font-mono px-1.5 py-0.5 rounded bg-zinc-800/80 text-zinc-400 border border-zinc-700/50">
-          v1.0
+        <span className="text-[11px] font-mono tracking-widest px-2 py-0.5 rounded-full bg-[#242424] text-[#b4b4b4] border border-[#2e2e2e]">
+          IDE
         </span>
       </div>
 
-      {/* Navigation */}
+      {/* Navigation Links */}
       <nav className="p-3 space-y-1 flex-1">
-        <div className="px-3 py-2 text-[10px] font-mono uppercase tracking-wider text-zinc-500 font-semibold">
+        <div className="px-3 py-2 text-[11px] font-mono tracking-widest uppercase text-[#898989]">
           Platform
         </div>
         {navItems.map((item) => {
@@ -65,39 +66,42 @@ export function Sidebar({ staffRole, userEmail }: SidebarProps) {
             <Link
               key={item.href}
               href={item.href}
-              className={`flex items-center gap-2.5 px-3 py-2 rounded-md text-xs transition-colors ${
+              className={`flex items-center gap-2.5 px-3 py-2 rounded-lg text-sm transition-colors ${
                 isActive
-                  ? 'bg-zinc-800 text-zinc-100 font-medium'
-                  : 'text-zinc-400 hover:text-zinc-200 hover:bg-zinc-800/40'
+                  ? 'bg-[#242424] text-[#fafafa] font-medium border border-[#2e2e2e]'
+                  : 'text-[#b4b4b4] hover:text-[#fafafa] hover:bg-[#242424]'
               }`}
             >
-              <Icon className="w-4 h-4 text-zinc-400" />
+              <Icon className={`w-4 h-4 ${isActive ? 'text-[#3ecf8e]' : 'text-[#898989]'}`} />
               <span>{item.label}</span>
+              {isActive && (
+                <span className="ml-auto w-1.5 h-1.5 rounded-full bg-[#3ecf8e]" />
+              )}
             </Link>
           );
         })}
       </nav>
 
-      {/* User & Sign Out Footer */}
-      <div className="p-3 border-t border-zinc-800/80 bg-[#0a0a0c]">
-        <div className="flex items-center justify-between px-2 py-1.5">
+      {/* Footer Profile & Sign Out */}
+      <div className="p-4 border-t border-[#2e2e2e] bg-[#121212]">
+        <div className="flex items-center justify-between">
           <div className="min-w-0 pr-2">
-            <p className="text-xs text-zinc-200 font-medium truncate">
+            <p className="text-xs text-[#fafafa] font-medium truncate">
               {userEmail || 'staff@tvplatform'}
             </p>
             <div className="flex items-center gap-1.5 mt-0.5">
-              <span className="w-1.5 h-1.5 rounded-full bg-emerald-500" />
-              <span className="text-[10px] text-zinc-400 font-mono uppercase">
+              <span className="w-1.5 h-1.5 rounded-full bg-[#3ecf8e]" />
+              <span className="text-[11px] text-[#898989] font-mono uppercase tracking-wider">
                 {staffRole || 'Admin'}
               </span>
             </div>
           </div>
           <button
             onClick={handleSignOut}
-            className="p-1.5 rounded-md hover:bg-zinc-800 text-zinc-400 hover:text-zinc-200 transition-colors"
+            className="p-1.5 rounded-full hover:bg-[#242424] border border-[#393939] text-[#b4b4b4] hover:text-[#fafafa] transition-colors"
             title="Sign Out"
           >
-            <LogOut className="w-4 h-4" />
+            <LogOut className="w-3.5 h-3.5" />
           </button>
         </div>
       </div>

@@ -18,24 +18,25 @@ export default async function DashboardLayout({
   }
 
   return (
-    <div className="min-h-screen w-full bg-[#09090b] text-zinc-100 flex flex-col md:flex-row antialiased">
-      {/* Sleek Minimalist Sidebar */}
+    <div className="min-h-screen w-full bg-[#121212] text-[#fafafa] flex flex-col md:flex-row antialiased">
+      {/* Midnight IDE Sidebar */}
       <Sidebar staffRole={staff?.role} userEmail={staff?.email} />
 
       {/* Main Full-Width Content Viewport */}
-      <div className="flex-1 flex flex-col min-w-0 bg-[#09090b]">
-        {/* Top Minimal Navigation Bar */}
-        <header className="h-14 px-6 lg:px-8 border-b border-zinc-800/80 bg-[#09090b]/80 backdrop-blur flex items-center justify-between shrink-0">
-          <div className="flex items-center gap-2 text-xs">
-            <span className="text-zinc-500 font-mono">Console</span>
-            <span className="text-zinc-600">/</span>
-            <span className="text-zinc-200 font-medium">Administration</span>
+      <div className="flex-1 flex flex-col min-w-0 bg-[#121212]">
+        {/* Top Navigation Bar (64px, 1px bottom border #2e2e2e) */}
+        <header className="h-16 px-6 lg:px-8 border-b border-[#2e2e2e] bg-[#121212] flex items-center justify-between shrink-0">
+          <div className="flex items-center gap-2 text-sm">
+            <span className="text-[#898989]">Console</span>
+            <span className="text-[#4d4d4d]">/</span>
+            <span className="text-[#fafafa] font-medium">Administration</span>
           </div>
 
           <div className="flex items-center gap-3">
-            <div className="flex items-center gap-1.5 px-2.5 py-1 rounded border border-zinc-800 bg-zinc-900/60 text-[11px] font-mono text-zinc-400">
-              <span className="w-1.5 h-1.5 rounded-full bg-emerald-500" />
-              <span>Production Node</span>
+            {/* Supabase Status Pill */}
+            <div className="flex items-center gap-2 px-3 py-1 rounded-full bg-[#242424] border border-[#2e2e2e] text-xs font-mono text-[#b4b4b4]">
+              <span className="w-1.5 h-1.5 rounded-full bg-[#3ecf8e]" />
+              <span>PostgreSQL Cluster Live</span>
             </div>
           </div>
         </header>

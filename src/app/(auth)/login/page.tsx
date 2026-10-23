@@ -3,7 +3,7 @@
 import React, { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { createBrowserClient } from '@supabase/ssr';
-import { Shield, Lock, Mail, AlertCircle, KeyRound, ArrowLeft } from 'lucide-react';
+import { Terminal, Lock, Mail, AlertCircle, KeyRound, ArrowLeft } from 'lucide-react';
 
 export default function LoginPage() {
   const router = useRouter();
@@ -68,7 +68,6 @@ export default function LoginPage() {
     setErrorMsg('');
 
     try {
-      // Verify Email OTP token
       const { data, error } = await supabase.auth.verifyOtp({
         email,
         token: otp.trim(),
@@ -97,7 +96,7 @@ export default function LoginPage() {
         options: { shouldCreateUser: false },
       });
       if (error) throw error;
-      setInfoMsg('A new verification code was sent to your email.');
+      setInfoMsg('A fresh verification code was sent to your email.');
     } catch (err: any) {
       setErrorMsg(err.message || 'Failed to resend code');
     } finally {
@@ -106,25 +105,34 @@ export default function LoginPage() {
   };
 
   return (
-    <div className="min-h-screen flex items-center justify-center p-4 bg-background">
-      <div className="w-full max-w-sm border border-border bg-surface p-6 rounded-none">
-        <div className="flex items-center gap-2 mb-6 border-b border-border pb-4">
-          <Shield className="w-5 h-5 text-accent" />
-          <h1 className="font-mono text-sm uppercase tracking-wider text-slate-100 font-semibold">
-            {step === 'credentials' ? 'Staff Authentication' : 'Email OTP Verification'}
-          </h1>
+    <div className="min-h-screen flex items-center justify-center p-4 bg-[#121212]">
+      <div className="w-full max-w-sm rounded-[16px] bg-[#121212] border border-[#2e2e2e] p-6 sm:p-8">
+        
+        {/* Supabase Midnight Header */}
+        <div className="flex items-center gap-3 mb-6 pb-4 border-b border-[#2e2e2e]">
+          <div className="w-8 h-8 rounded-md bg-[#121212] border border-[#3ecf8e] flex items-center justify-center text-[#3ecf8e]">
+            <Terminal className="w-4 h-4" />
+          </div>
+          <div>
+            <h1 className="text-base font-normal text-[#fafafa] tracking-[-0.007em]">
+              Staff <span className="text-[#3ecf8e]">Console</span>
+            </h1>
+            <p className="text-xs text-[#898989]">
+              {step === 'credentials' ? 'Authoritative Access' : 'Email Verification Code'}
+            </p>
+          </div>
         </div>
 
         {errorMsg && (
-          <div className="mb-4 p-3 border border-danger/40 bg-danger/10 text-danger text-xs flex items-center gap-2">
-            <AlertCircle className="w-4 h-4 flex-shrink-0" />
+          <div className="mb-4 p-3 rounded-[8px] border border-[#1f4b37] bg-[#121212] text-[#fafafa] text-xs flex items-center gap-2 font-mono">
+            <AlertCircle className="w-4 h-4 text-[#ff453a] flex-shrink-0" />
             <span>{errorMsg}</span>
           </div>
         )}
 
         {infoMsg && (
-          <div className="mb-4 p-3 border border-accent/40 bg-accent/10 text-slate-200 text-xs flex items-center gap-2">
-            <Mail className="w-4 h-4 text-accent flex-shrink-0" />
+          <div className="mb-4 p-3 rounded-[8px] border border-[#1f4b37] bg-[#121212] text-[#fafafa] text-xs flex items-center gap-2 font-mono">
+            <Mail className="w-4 h-4 text-[#3ecf8e] flex-shrink-0" />
             <span>{infoMsg}</span>
           </div>
         )}
@@ -132,7 +140,7 @@ export default function LoginPage() {
         {step === 'credentials' ? (
           <form onSubmit={handleCredentialsSubmit} className="space-y-4">
             <div>
-              <label className="block font-mono text-xs text-slate-400 mb-1" htmlFor="email">
+              <label className="block text-xs font-mono text-[#898989] mb-1.5" htmlFor="email">
                 Staff Email Address
               </label>
               <div className="relative">
@@ -142,15 +150,15 @@ export default function LoginPage() {
                   required
                   value={email}
                   onChange={(e) => setEmail(e.target.value)}
-                  className="w-full bg-surface-raised border border-border px-3 py-2 text-xs text-slate-100 focus:border-accent focus:outline-none"
+                  className="w-full bg-[#121212] border border-[#393939] px-3.5 py-2 text-sm text-[#fafafa] rounded-[8px] placeholder-[#898989] focus:outline-none transition-colors"
                   placeholder="staff@tvplatform.internal"
                 />
-                <Mail className="w-3.5 h-3.5 text-slate-500 absolute right-3 top-2.5" />
+                <Mail className="w-4 h-4 text-[#898989] absolute right-3 top-2.5" />
               </div>
             </div>
 
             <div>
-              <label className="block font-mono text-xs text-slate-400 mb-1" htmlFor="password">
+              <label className="block text-xs font-mono text-[#898989] mb-1.5" htmlFor="password">
                 Password
               </label>
               <div className="relative">
@@ -160,16 +168,16 @@ export default function LoginPage() {
                   required
                   value={password}
                   onChange={(e) => setPassword(e.target.value)}
-                  className="w-full bg-surface-raised border border-border px-3 py-2 text-xs text-slate-100 focus:border-accent focus:outline-none"
+                  className="w-full bg-[#121212] border border-[#393939] px-3.5 py-2 text-sm text-[#fafafa] rounded-[8px] placeholder-[#898989] focus:outline-none transition-colors"
                 />
-                <Lock className="w-3.5 h-3.5 text-slate-500 absolute right-3 top-2.5" />
+                <Lock className="w-4 h-4 text-[#898989] absolute right-3 top-2.5" />
               </div>
             </div>
 
             <button
               type="submit"
               disabled={isLoading}
-              className="w-full py-2 bg-slate-800 hover:bg-slate-700 text-slate-100 border border-slate-600 font-mono text-xs tracking-wider uppercase transition-colors disabled:opacity-50 mt-2"
+              className="w-full py-2.5 px-4 bg-[#3ecf8e] hover:bg-[#00c573] text-[#121212] hover:border-[#1f4b37] border border-[#3ecf8e] rounded-full text-sm font-medium transition-colors disabled:opacity-50 mt-2"
             >
               {isLoading ? 'Sending Code...' : 'Sign In & Send Code'}
             </button>
@@ -177,7 +185,7 @@ export default function LoginPage() {
         ) : (
           <form onSubmit={handleOtpSubmit} className="space-y-4">
             <div>
-              <label className="block font-mono text-xs text-slate-400 mb-1" htmlFor="otp">
+              <label className="block text-xs font-mono text-[#898989] mb-1.5" htmlFor="otp">
                 6-Digit Email Verification Code
               </label>
               <div className="relative">
@@ -191,17 +199,17 @@ export default function LoginPage() {
                   required
                   value={otp}
                   onChange={(e) => setOtp(e.target.value.replace(/\D/g, ''))}
-                  className="w-full bg-surface-raised border border-border px-3 py-2 text-center font-mono text-base tracking-[0.5em] text-slate-100 focus:border-accent focus:outline-none"
+                  className="w-full bg-[#121212] border border-[#393939] px-3 py-2 text-center font-mono text-base tracking-[0.5em] text-[#fafafa] rounded-[8px] focus:outline-none transition-colors"
                   placeholder="000000"
                 />
-                <KeyRound className="w-3.5 h-3.5 text-slate-500 absolute right-3 top-3" />
+                <KeyRound className="w-4 h-4 text-[#898989] absolute right-3 top-3" />
               </div>
             </div>
 
             <button
               type="submit"
               disabled={isLoading || otp.length !== 6}
-              className="w-full py-2 bg-slate-800 hover:bg-slate-700 text-slate-100 border border-slate-600 font-mono text-xs tracking-wider uppercase transition-colors disabled:opacity-50"
+              className="w-full py-2.5 px-4 bg-[#3ecf8e] hover:bg-[#00c573] text-[#121212] hover:border-[#1f4b37] border border-[#3ecf8e] rounded-full text-sm font-medium transition-colors disabled:opacity-50"
             >
               {isLoading ? 'Verifying Code...' : 'Authenticate Session'}
             </button>
@@ -210,7 +218,7 @@ export default function LoginPage() {
               <button
                 type="button"
                 onClick={() => { setStep('credentials'); setOtp(''); }}
-                className="text-xs text-slate-400 hover:text-slate-200 flex items-center gap-1 font-mono"
+                className="text-xs text-[#898989] hover:text-[#fafafa] flex items-center gap-1 font-mono transition-colors"
               >
                 <ArrowLeft className="w-3 h-3" /> Back
               </button>
@@ -218,7 +226,7 @@ export default function LoginPage() {
                 type="button"
                 disabled={isLoading}
                 onClick={handleResendOtp}
-                className="text-xs text-accent hover:underline font-mono"
+                className="text-xs text-[#3ecf8e] hover:text-[#00c573] hover:underline font-mono transition-colors"
               >
                 Resend Email Code
               </button>
@@ -226,9 +234,9 @@ export default function LoginPage() {
           </form>
         )}
 
-        <div className="mt-6 pt-4 border-t border-border/50 text-center">
-          <p className="text-[11px] text-slate-500 font-mono">
-            Restricted System — Access Audited and Logged
+        <div className="mt-6 pt-4 border-t border-[#2e2e2e] text-center">
+          <p className="text-[11px] text-[#898989] font-mono">
+            Midnight IDE · Audited & Logged
           </p>
         </div>
       </div>
