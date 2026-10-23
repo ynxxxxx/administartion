@@ -2,7 +2,7 @@ import React from 'react';
 import { redirect } from 'next/navigation';
 import { adminClient } from '@/lib/db/supabase-admin';
 import { requireStaffSession } from '@/lib/auth/server-guard';
-import { banUserAction, unbanUserAction } from '@/lib/actions/moderation';
+import { UserActionForm } from './user-action-form';
 import { Search, ShieldAlert, CheckCircle2, AlertOctagon, User } from 'lucide-react';
 
 export const dynamic = 'force-dynamic';
@@ -148,87 +148,7 @@ export default async function UserLookupPage({
           </div>
 
           {/* Action Enforcement Bar */}
-          <div className="border border-border bg-surface p-6">
-            <h3 className="font-mono text-xs font-bold uppercase tracking-wider text-slate-300 mb-4 flex items-center gap-2">
-              <AlertOctagon className="w-4 h-4 text-warning" />
-              <span>Enforce Administrative Intervention</span>
-            </h3>
-
-            {isCurrentlyBanned ? (
-              <form action={async (formData) => { "use server"; await unbanUserAction(formData); }} className="space-y-4 max-w-xl">
-                <input type="hidden" name="targetUserId" value={foundUser.id} />
-                <div>
-                  <label className="block font-mono text-[11px] text-slate-400 mb-1">
-                    Revocation Justification (Recorded in Immutable Audit Log)
-                  </label>
-                  <input
-                    type="text"
-                    name="reason"
-                    required
-                    placeholder="Enter audit reason for pardon..."
-                    className="w-full bg-surface-raised border border-border px-3 py-2 text-xs font-mono text-slate-100 focus:outline-none focus:border-accent"
-                  />
-                </div>
-                <button
-                  type="submit"
-                  className="px-4 py-2 bg-success text-slate-950 font-mono text-xs font-bold hover:bg-success/90 transition-colors"
-                >
-                  Confirm Account Pardon & Unban
-                </button>
-              </form>
-            ) : (
-              <form action={async (formData) => { "use server"; await banUserAction(formData); }} className="space-y-4 max-w-xl">
-                <input type="hidden" name="targetUserId" value={foundUser.id} />
-                <div className="grid grid-cols-2 gap-4">
-                  <div>
-                    <label className="block font-mono text-[11px] text-slate-400 mb-1">
-                      Enforcement Scope
-                    </label>
-                    <select
-                      name="scope"
-                      className="w-full bg-surface-raised border border-border px-3 py-2 text-xs font-mono text-slate-100 focus:outline-none focus:border-accent"
-                    >
-                      <option value="global">Global Platform Ban</option>
-                      <option value="community">Community Scoped</option>
-                    </select>
-                  </div>
-                  <div>
-                    <label className="block font-mono text-[11px] text-slate-400 mb-1">
-                      Duration (Days, 0 = Permanent)
-                    </label>
-                    <input
-                      type="number"
-                      name="durationDays"
-                      defaultValue={0}
-                      min={0}
-                      max={3650}
-                      className="w-full bg-surface-raised border border-border px-3 py-2 text-xs font-mono text-slate-100 focus:outline-none focus:border-accent"
-                    />
-                  </div>
-                </div>
-
-                <div>
-                  <label className="block font-mono text-[11px] text-slate-400 mb-1">
-                    Enforcement Reason (Mandatory Audit Trail Entry)
-                  </label>
-                  <input
-                    type="text"
-                    name="reason"
-                    required
-                    placeholder="Provide detailed violation rationale..."
-                    className="w-full bg-surface-raised border border-border px-3 py-2 text-xs font-mono text-slate-100 focus:outline-none focus:border-accent"
-                  />
-                </div>
-
-                <button
-                  type="submit"
-                  className="px-4 py-2 bg-danger text-white font-mono text-xs font-bold hover:bg-danger/90 transition-colors"
-                >
-                  Execute Ban & Revoke All Active Sessions
-                </button>
-              </form>
-            )}
-          </div>
+          <UserActionForm userId={foundUser.id} isCurrentlyBanned={isCurrentlyBanned} />
 
           {/* Historical Bans */}
           <div className="border border-border bg-surface overflow-hidden">

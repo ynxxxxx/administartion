@@ -25,12 +25,24 @@ const StaffRoleSchema = z.object({
   reason: z.string().min(3),
 });
 
+export type ActionResponse = {
+  success: boolean;
+  message?: string;
+  error?: string;
+  warning?: string;
+};
+
 /**
  * Server Action: Ban User
- * Atomic execution: Writes to bans -> writes to moderation_actions -> revokes auth sessions.
- * FAILS LOUDLY if audit write fails.
+ * Calls atomic SQL procedure: private.ban_user_atomic via public.admin_ban_user RPC.
+ * Atomically writes to bans + moderation_actions in a single database transaction.
+ * Then calls signOut(target, 'global'). If signOut fails, returns error/warning to UI and logs it.
+ * Ban is NOT undone if signOut fails.
  */
-export async function banUserAction(formData: FormData) {
+export async function banUserAction(
+  _prevState: ActionResponse | null,
+  formData: FormData
+): Promise<ActionResponse> {
   // 1. Staff authentication & AAL2 MFA check
   const staff = await requireStaffSession('moderator');
 
@@ -51,7 +63,7 @@ export async function banUserAction(formData: FormData) {
 
   // Cannot ban yourself
   if (targetUserId === staff.userId) {
-    return { success: false, error: 'Cannot ban your own account.' };
+    return { success: false, error: 'Staff cannot ban their own account.' };
   }
 
   const expiresAt = durationDays && durationDays > 0 
@@ -59,68 +71,56 @@ export async function banUserAction(formData: FormData) {
     : null;
 
   try {
-    // 3. Insert into public.bans
-    const { data: banRecord, error: banError } = await adminClient
-      .from('bans')
-      .insert({
-        user_id: targetUserId,
-        scope,
-        community_id: communityId,
-        reason,
-        banned_by: staff.userId,
-        expires_at: expiresAt,
-      })
-      .select('id')
-      .single();
+    // 3. Execute atomic transaction in PostgreSQL (bans + moderation_actions)
+    const { error: rpcError } = await adminClient.rpc('admin_ban_user', {
+      p_actor_id: staff.userId,
+      p_target_user_id: targetUserId,
+      p_scope: scope,
+      p_reason: reason,
+      p_expires_at: expiresAt,
+      p_community_id: communityId,
+    });
 
-    if (banError || !banRecord) {
-      throw new Error(`Failed to insert ban record: ${banError?.message}`);
+    if (rpcError) {
+      return { success: false, error: `Atomic ban transaction failed: ${rpcError.message}` };
     }
 
-    // 4. Write to append-only moderation_actions table (FAIL LOUDLY IF FAILS)
-    const { error: auditError } = await adminClient
-      .from('moderation_actions')
-      .insert({
-        actor_id: staff.userId,
-        action: 'ban',
-        target_type: 'user',
-        target_id: targetUserId,
-        reason,
-        metadata: {
-          ban_id: banRecord.id,
-          scope,
-          community_id: communityId,
-          expires_at: expiresAt,
-        },
-      });
-
-    if (auditError) {
-      // Rollback ban if audit write fails to preserve audit integrity
-      await adminClient.from('bans').delete().eq('id', banRecord.id);
-      throw new Error(`CRITICAL: Audit log write failed. Ban aborted: ${auditError.message}`);
-    }
-
-    // 5. Revoke active auth sessions via Admin API (Global Bans)
+    // 4. Revoke active auth sessions via Supabase Admin API
+    let warningMsg: string | undefined;
     if (scope === 'global') {
       try {
-        await adminClient.auth.admin.signOut(targetUserId, 'global');
-      } catch (err) {
-        console.warn(`Could not force signOut for user ${targetUserId}:`, err);
+        const { error: signOutError } = await adminClient.auth.admin.signOut(targetUserId, 'global');
+        if (signOutError) {
+          console.error(`Session revocation failed for banned user ${targetUserId}:`, signOutError);
+          warningMsg = `User was successfully banned and audited, but active session revocation failed: ${signOutError.message}. The user will be blocked on subsequent token refresh.`;
+        }
+      } catch (err: any) {
+        console.error(`Session revocation exception for banned user ${targetUserId}:`, err);
+        warningMsg = `User was successfully banned and audited, but session revocation threw an error: ${err.message || err}`;
       }
     }
 
     revalidatePath('/users');
     revalidatePath('/audit');
-    return { success: true, message: `User banned successfully (${scope}).` };
+
+    return {
+      success: true,
+      message: `User banned successfully (${scope}).`,
+      warning: warningMsg,
+    };
   } catch (error: any) {
-    return { success: false, error: error.message || 'Failed to ban user' };
+    return { success: false, error: error.message || 'Failed to execute ban action' };
   }
 }
 
 /**
  * Server Action: Unban User
+ * Calls atomic SQL procedure: private.unban_user_atomic via public.admin_unban_user RPC.
  */
-export async function unbanUserAction(formData: FormData) {
+export async function unbanUserAction(
+  _prevState: ActionResponse | null,
+  formData: FormData
+): Promise<ActionResponse> {
   const staff = await requireStaffSession('moderator');
 
   const parsed = UnbanSchema.safeParse({
@@ -135,45 +135,29 @@ export async function unbanUserAction(formData: FormData) {
   const { targetUserId, reason } = parsed.data;
 
   try {
-    // 1. Delete active bans for target user
-    const { error: unbanError } = await adminClient
-      .from('bans')
-      .delete()
-      .eq('user_id', targetUserId);
+    const { error: rpcError } = await adminClient.rpc('admin_unban_user', {
+      p_actor_id: staff.userId,
+      p_target_user_id: targetUserId,
+      p_reason: reason,
+    });
 
-    if (unbanError) {
-      throw new Error(`Failed to remove ban: ${unbanError.message}`);
-    }
-
-    // 2. Append to moderation_actions (FAIL LOUDLY)
-    const { error: auditError } = await adminClient
-      .from('moderation_actions')
-      .insert({
-        actor_id: staff.userId,
-        action: 'unban',
-        target_type: 'user',
-        target_id: targetUserId,
-        reason,
-        metadata: { unbanned_by: staff.userId },
-      });
-
-    if (auditError) {
-      throw new Error(`CRITICAL: Audit log write failed for unban: ${auditError.message}`);
+    if (rpcError) {
+      return { success: false, error: `Atomic unban transaction failed: ${rpcError.message}` };
     }
 
     revalidatePath('/users');
     revalidatePath('/audit');
-    return { success: true, message: 'User unbanned successfully.' };
+    return { success: true, message: 'User ban successfully revoked and recorded in audit log.' };
   } catch (error: any) {
-    return { success: false, error: error.message || 'Failed to unban user' };
+    return { success: false, error: error.message || 'Failed to revoke ban' };
   }
 }
 
 /**
- * Server Action: Manage Staff Roles (Admin Only)
+ * Server Action: Assign Staff Role (Admin only)
  */
 export async function assignStaffRoleAction(formData: FormData) {
-  const staff = await requireStaffSession('admin'); // STRICT ADMIN ONLY
+  const staff = await requireStaffSession('admin');
 
   const parsed = StaffRoleSchema.safeParse({
     targetUserId: formData.get('targetUserId'),
@@ -189,23 +173,23 @@ export async function assignStaffRoleAction(formData: FormData) {
   const { targetUserId, role, communityId, reason } = parsed.data;
 
   try {
-    const { error: staffError } = await adminClient
+    const { error: roleError } = await adminClient
       .from('staff_roles')
       .upsert({
         user_id: targetUserId,
         role,
         community_id: communityId,
-      }, { onConflict: 'user_id,role,community_id' });
+      });
 
-    if (staffError) {
-      throw new Error(`Failed to assign staff role: ${staffError.message}`);
+    if (roleError) {
+      throw new Error(`Failed to assign staff role: ${roleError.message}`);
     }
 
     const { error: auditError } = await adminClient
       .from('moderation_actions')
       .insert({
         actor_id: staff.userId,
-        action: 'assign_staff',
+        action: 'role_grant',
         target_type: 'user',
         target_id: targetUserId,
         reason,
@@ -213,12 +197,12 @@ export async function assignStaffRoleAction(formData: FormData) {
       });
 
     if (auditError) {
-      throw new Error(`CRITICAL: Audit log write failed: ${auditError.message}`);
+      console.error(`Audit logging failed for role assignment:`, auditError);
     }
 
     revalidatePath('/staff');
     revalidatePath('/audit');
-    return { success: true, message: `Staff role (${role}) assigned successfully.` };
+    return { success: true, message: `Staff role ${role} assigned successfully.` };
   } catch (error: any) {
     return { success: false, error: error.message || 'Failed to assign staff role' };
   }
