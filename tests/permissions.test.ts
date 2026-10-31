@@ -9,7 +9,7 @@ import { verifyStaffRole, verifyMfaAssuranceLevel } from '../src/lib/auth/rbac';
 console.log('Running Admin Dashboard Permission & Scoping Unit Tests against rbac.ts...');
 
 // TEST 1: Non-staff user access denial
-assert.throws(
+process.env.ENFORCE_MFA = 'true'; assert.throws(
   () => verifyStaffRole(null, 'moderator'),
   /does not hold an active staff role/,
   'TEST 1 FAILED: Non-staff was not rejected!'
@@ -25,7 +25,7 @@ assert.strictEqual(
 console.log('  √ Test 2 Passed: Moderator permitted for moderation actions');
 
 // TEST 3: Moderator rejected from administrative staff management
-assert.throws(
+process.env.ENFORCE_MFA = 'true'; assert.throws(
   () => verifyStaffRole('moderator', 'admin'),
   /Operation requires administrative privileges/,
   'TEST 3 FAILED: Moderator was allowed to perform admin staff management!'
@@ -41,7 +41,7 @@ assert.strictEqual(
 console.log('  √ Test 4 Passed: Admin permitted for all privileged operations');
 
 // TEST 5: MFA AAL2 enforcement
-assert.throws(
+process.env.ENFORCE_MFA = 'true'; assert.throws(
   () => verifyMfaAssuranceLevel('aal1'),
   /MFA_REQUIRED/,
   'TEST 5 FAILED: AAL1 session passed without MFA!'

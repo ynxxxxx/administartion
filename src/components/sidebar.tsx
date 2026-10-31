@@ -9,13 +9,15 @@ import {
   Terminal, 
   FileText, 
   LogOut,
-  LayoutDashboard
+  LayoutDashboard,
+  Flag
 } from 'lucide-react';
 import { auth } from '@/lib/firebase/client';
 
 const navigationItems = [
   { name: 'Overview', href: '/', icon: LayoutDashboard },
   { name: 'Users & Bans', href: '/users', icon: Users },
+  { name: 'Reports', href: '/reports', icon: Flag },
   { name: 'Staff & RBAC', href: '/staff', icon: ShieldAlert },
   { name: 'Audit Log', href: '/audit', icon: FileText },
 ];

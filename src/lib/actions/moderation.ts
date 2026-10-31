@@ -207,3 +207,42 @@ export async function assignStaffRoleAction(formData: FormData) {
     return { success: false, error: error.message || 'Failed to assign staff role' };
   }
 }
+
+
+/**
+ * Server Action: Update Report Status (Slice 4)
+ * Allows moderators to review, action, or dismiss user reports.
+ */
+export async function updateReportStatusAction(
+  formData: FormData
+): Promise<ActionResponse> {
+  const staff = await requireStaffSession('moderator');
+
+  const reportId = formData.get('reportId')?.toString();
+  const status = formData.get('status')?.toString();
+
+  if (!reportId || !status || !['actioned', 'dismissed', 'reviewing'].includes(status)) {
+    return { success: false, error: 'Invalid report status or ID' };
+  }
+
+  try {
+    const { error } = await adminClient
+      .from('reports')
+      .update({
+        status,
+        handled_by: staff.userId,
+        updated_at: new Date().toISOString(),
+      })
+      .eq('id', reportId);
+
+    if (error) {
+      throw new Error(`Failed to update report: `);
+    }
+
+    revalidatePath('/reports');
+    revalidatePath('/audit');
+    return { success: true, message: `Report marked as .` };
+  } catch (error: any) {
+    return { success: false, error: error.message || 'Failed to update report status' };
+  }
+}
