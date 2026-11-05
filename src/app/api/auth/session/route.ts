@@ -1,5 +1,6 @@
 import { NextResponse } from 'next/server';
 import { cookies } from 'next/headers';
+import crypto from 'crypto';
 import { adminClient } from '@/lib/db/supabase-admin';
 
 export const dynamic = 'force-dynamic';
@@ -24,32 +25,27 @@ export async function POST(request: Request) {
     }
 
     // Verify staff access:
-    // 1. Check if user is in staff_roles (or primary admin younesbouziane38@gmail.com)
+    // Check if user is in staff_roles
     let isStaff = false;
     let role = 'moderator';
 
-    if (normalizedEmail === 'younesbouziane38@gmail.com') {
-      isStaff = true;
-      role = 'admin';
-    } else {
-      // Query profiles/staff_roles
-      const { data: profile } = await adminClient
-        .from('profiles')
-        .select('id')
-        .eq('id', uid)
+    // Query profiles/staff_roles
+    const { data: profile } = await adminClient
+      .from('profiles')
+      .select('id')
+      .eq('id', uid)
+      .maybeSingle();
+
+    if (profile) {
+      const { data: staffRecord } = await adminClient
+        .from('staff_roles')
+        .select('role')
+        .eq('user_id', profile.id)
         .maybeSingle();
 
-      if (profile) {
-        const { data: staffRecord } = await adminClient
-          .from('staff_roles')
-          .select('role')
-          .eq('user_id', profile.id)
-          .maybeSingle();
-
-        if (staffRecord) {
-          isStaff = true;
-          role = staffRecord.role;
-        }
+      if (staffRecord) {
+        isStaff = true;
+        role = staffRecord.role;
       }
     }
 
@@ -60,7 +56,7 @@ export async function POST(request: Request) {
       );
     }
 
-    // Store verified staff session in HttpOnly secure cookie
+    // Store verified staff session in HttpOnly secure cookie with cryptographic signature
     const sessionData = JSON.stringify({
       email: normalizedEmail,
       uid,
@@ -68,11 +64,21 @@ export async function POST(request: Request) {
       issuedAt: Date.now(),
     });
 
-    // Simple tamper-resistant payload encoding
-    const sessionPayload = Buffer.from(sessionData).toString('base64');
+    const payloadBase64 = Buffer.from(sessionData).toString('base64');
+    const secret =
+      process.env.ADMIN_SESSION_SECRET ||
+      process.env.SUPABASE_SERVICE_ROLE_KEY ||
+      'default-staff-session-secret-min-32-chars';
+
+    const signature = crypto
+      .createHmac('sha256', secret)
+      .update(payloadBase64)
+      .digest('base64url');
+
+    const signedCookie = `${payloadBase64}.${signature}`;
 
     const cookieStore = await cookies();
-    cookieStore.set('staff_session', sessionPayload, {
+    cookieStore.set('staff_session', signedCookie, {
       httpOnly: true,
       secure: process.env.NODE_ENV === 'production',
       sameSite: 'lax',
