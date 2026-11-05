@@ -4,7 +4,14 @@
  */
 
 import assert from 'assert';
-import { verifyStaffRole, verifyMfaAssuranceLevel } from '../src/lib/auth/rbac';
+import {
+  verifyStaffRole,
+  verifyMfaAssuranceLevel,
+  signSessionPayload,
+  verifySessionSignature,
+  parseAndVerifyStaffSession,
+  MAX_SESSION_AGE_MS,
+} from '../src/lib/auth/rbac';
 
 console.log('Running Admin Dashboard Permission & Scoping Unit Tests against rbac.ts...');
 
@@ -53,5 +60,77 @@ assert.strictEqual(
 );
 console.log('  √ Test 5 Passed: Strict MFA AAL2 assurance required');
 
-console.log('\nALL ADMIN PERMISSION TESTS PASSED SUCCESSFULLY (5/5 assertions against rbac.ts).');
+// TEST 6: Cryptographic session signing and verification
+const validPayload = Buffer.from(
+  JSON.stringify({
+    email: 'staff@gmail.com',
+    uid: 'test-uuid-1234',
+    role: 'moderator',
+    issuedAt: Date.now(),
+  })
+).toString('base64');
+const validSig = signSessionPayload(validPayload);
+assert.strictEqual(
+  verifySessionSignature(validPayload, validSig),
+  true,
+  'TEST 6 FAILED: Valid session signature failed verification!'
+);
+console.log('  √ Test 6 Passed: Valid HMAC-SHA256 session signature verified');
+
+// TEST 7: Tampered session payload rejected
+const tamperedPayload = Buffer.from(
+  JSON.stringify({
+    email: 'hacker@gmail.com',
+    uid: 'test-uuid-1234',
+    role: 'admin',
+    issuedAt: Date.now(),
+  })
+).toString('base64');
+assert.strictEqual(
+  verifySessionSignature(tamperedPayload, validSig),
+  false,
+  'TEST 7 FAILED: Tampered payload was accepted!'
+);
+console.log('  √ Test 7 Passed: Tampered session payload rejected');
+
+// TEST 8: Tampered signature rejected
+const tamperedSig = validSig.slice(0, -4) + 'AAAA';
+assert.strictEqual(
+  verifySessionSignature(validPayload, tamperedSig),
+  false,
+  'TEST 8 FAILED: Tampered signature was accepted!'
+);
+console.log('  √ Test 8 Passed: Tampered signature rejected');
+
+// TEST 9: Unsigned / malformed token format rejected
+assert.throws(
+  () => parseAndVerifyStaffSession(validPayload),
+  /Invalid or unsigned staff session/,
+  'TEST 9 FAILED: Unsigned session was not rejected!'
+);
+assert.throws(
+  () => parseAndVerifyStaffSession(`${validPayload}.${validSig}.extra`),
+  /Invalid or unsigned staff session/,
+  'TEST 9 FAILED: Multi-part session was not rejected!'
+);
+console.log('  √ Test 9 Passed: Unsigned / malformed session token rejected');
+
+// TEST 10: Expired session token rejected (> 7 days)
+const expiredPayload = Buffer.from(
+  JSON.stringify({
+    email: 'staff@gmail.com',
+    uid: 'test-uuid-1234',
+    role: 'moderator',
+    issuedAt: Date.now() - (MAX_SESSION_AGE_MS + 60000), // 7 days + 1 min
+  })
+).toString('base64');
+const expiredSig = signSessionPayload(expiredPayload);
+assert.throws(
+  () => parseAndVerifyStaffSession(`${expiredPayload}.${expiredSig}`),
+  /Staff session expired/,
+  'TEST 10 FAILED: Expired session was not rejected!'
+);
+console.log('  √ Test 10 Passed: Expired session token rejected');
+
+console.log('\nALL ADMIN PERMISSION & CRYPTOGRAPHIC SESSION TESTS PASSED SUCCESSFULLY (10/10 assertions against rbac.ts).');
 process.exit(0);
